@@ -1,0 +1,2 @@
+uint8 category
+float64 xCenter
