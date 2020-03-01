@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+	
+    ### ROSBRIDGE ###
+    <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch"/>
+
+    ### Semantic_maping ###
+    <node name="semantic_mapping" pkg="semantic_mapping" type="node_semantic_mapping.py" output="screen">
+        <param name="topic_result" value="semantic_mapping/SemanticObjects"/>
+	    <param name="topic_intensity" value="bestImage_RGB"/>
+        <!-- RGBD_2_intensity bestImage_RGB -->
+        <param name="topic_depth" value="bestImage_D"/>
+        <!-- RGBD_2_depth bestImage_D -->
+        <param name="topic_republic" value="semantic_mapping/RGB"/>
+        <param name="topic_cnn" value="detectron2_ros/result"/>
+        <param name="threshold" value="0.5"/>
+        <param name="input_angle" value="0"/>
+        <!-- Ojo, poner a 90 si uso dataset crudo, a 0 si uso subimagenes de las panoramicas -->
+        <param name="point_cloud" value="false"/>
+	    <param name="debug" value="true"/>
+    </node>-->
+
+
+<!--    ### R-CNN ### log-->
+<!--    <node name="mask_rcnn" pkg="mask_rcnn_ros" type="mask_rcnn_node" output="screen">-->
+<!--        <remap from="~input" to="semantic_mapping/RGB" />-->
+<!--        <param name="~visualization" value="true" />-->
+<!--    </node>-->
+
+    ### ROOM_CATEGORIZATION ###
+    <node name="generate_panoramicImage" pkg="room_categorization" type="generate_panoramicImage.py" output="screen"/>
+    <node name="poseRobot" pkg="room_categorization" type="get_poseRobot.py" output="screen"/>
+    <node name="objectsInFOV" pkg="room_categorization" type="objectsInFOV.py" output="screen"/>
+    <node name="get_bestSubimage" pkg="room_categorization" type="get_bestSubimage.py" output="screen"/>
+    <node name="plot_roomScores" pkg="room_categorization" type="plot_roomScores.py" output="screen"/>
+
+	
+    ### RVIZ ###
+    <node name="rviz_player1" pkg="rviz" type="rviz" args="-d $(find room_categorization)/rviz/room_categorization_rviz_config.rviz"/>
+
+    ### RVIZ ###
+    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find semantic_mapping)/launch/Semantic_mapping_config_rviz.rviz"/>
+
+
+
+    ### simulation ###
+    <node pkg="rosbag" type="play" name="player" output="log" args="--clock /home/matez/Documents/RobotHome_Dataset/anto-s1_fullhouse1_localization.bag"/>
+    <include file="$(find missions_pkg)/launch/simbot/simbot_map_server.launch">
+        <arg name="map_file" value="$(find missions_pkg)/maps/anto-s1.yaml" />
+    </include>
+
+</launch>
