@@ -150,7 +150,7 @@ class objectsInFOV(object):
                 px = int(round(self._nCameras*self._width - (((angleBestObject - self._angmin)*self._nCameras*self._width) / (self._angmax - self._angmin))))
                 msg = bestObjectInfo(catBestObject, px)
                 self._pub.publish(msg)
-                # print("Objeto:  " + str(bestObj) + "  Angulo:  " + str(angleBestObject))
+                print("[objectsInFOV] Objeto:  " + str(bestObj) + "  Cat:  " + str(catBestObject))
             elif(not(bool(self.objIn)) and (catBestObject != 0 or angleBestObject != 0 or scoreBestObject!= 0)):
                 catBestObject = 0
                 angleBestObject = 0
@@ -168,17 +168,19 @@ class objectsInFOV(object):
         for obj in data.semanticObjects:
             self._mapa[obj.id] = (obj.idRoom, obj.type)
             # Objetos que dan gran informacion sobre la habitacion. Categoria 4
-            if(obj.type == 'http://mapir.isa.uma.es/Microwave' or obj.type == 'http://mapir.isa.uma.es/Oven' or obj.type == 'http://mapir.isa.uma.es/Toaster' or obj.type == 'http://mapir.isa.uma.es/Bed' or obj.type == 'http://mapir.isa.uma.es/Toilet'):
+            if(obj.type == 'microwave' or obj.type == 'oven' or obj.type == 'toaster' or obj.type == 'bed' or obj.type == 'toilet'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (4,)
             # Objetos que dan algo de informacion sobre la habitacion. Categoria 3
-            elif(obj.type == 'http://mapir.isa.uma.es/Dining_Table' or obj.type == 'http://mapir.isa.uma.es/Sink'):
+            elif(obj.type == 'dining table' or obj.type == 'sink'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (3,)
             # Objetos que dan poca informacion sobre la habitacion. Categoria 2
-            elif(obj.type == 'http://mapir.isa.uma.es/Tv' or obj.type == 'http://mapir.isa.uma.es/Bench' or obj.type == 'http://mapir.isa.uma.es/Couch'):
+            elif(obj.type == 'tv' or obj.type == 'bench' or obj.type == 'couch'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (2,)
             # Objetos que dan muy poca informacion sobre la habitacion. Categoria 1
-            elif(obj.type == 'http://mapir.isa.uma.es/Chair'):
+            elif(obj.type == 'chair'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (1,)
+            else:
+                self._mapa[obj.id] = self._mapa[obj.id] + (0,)
             self._mapa[obj.id] = self._mapa[obj.id] + (obj.score, obj.pose.position.x, obj.pose.position.y, obj.pose.position.z,)
         self._getFOV()
         self._createList_objectsInFOV()
