@@ -72,12 +72,30 @@ class bestSubimage(object):
         if(self._last_xCenter > self._width/2 and self._last_xCenter < 3*self._width+self._width/2):
             self._last_subimg = self._last_panoramic[:,self._last_xCenter-self._width/2:self._last_xCenter+(self._width/2-1)]
             self._last_subimgD = self._last_panoramicD[:,self._last_xCenter-self._width/2:self._last_xCenter+(self._width/2-1)]
+            test_shape = self._last_subimg.shape[:2]
+            if(test_shape[1] > 239):
+                print("ERROR CASO 1 - RGB")
+            test_shape = self._last_subimgD.shape[:2]
+            if(test_shape[1] > 239):
+                print("ERROR CASO 1 - D")
         elif(self._last_xCenter <= self._width/2):
             self._last_subimg = self._last_panoramic[:,0:self._width-1]
             self._last_subimgD = self._last_panoramicD[:,0:self._width-1]
+            test_shape = self._last_subimg.shape[:2]
+            if(test_shape[1] > 239):
+                print("ERROR CASO 2 - RGB")
+            test_shape = self._last_subimgD.shape[:2]
+            if(test_shape[1] > 239):
+                print("ERROR CASO 2 - D")
         else:
-            self._last_subimg = self._last_panoramic[:,3*self._width-1:]
-            self._last_subimgD = self._last_panoramicD[:,3*self._width-1:]
+            self._last_subimg = self._last_panoramic[:,3*self._width+1:]
+            self._last_subimgD = self._last_panoramicD[:,3*self._width+1:]
+            test_shape = self._last_subimg.shape[:2]
+            if(test_shape[1] > 239):
+                print("ERROR CASO 3 - RGB" + str(test_shape))
+            test_shape = self._last_subimgD.shape[:2]
+            if(test_shape[1] > 239):
+                print("ERROR CASO 3 - D" + str(test_shape))
 
     def _get_virtualTF(self):
         if(self._last_xCenter > self._width/2 and self._last_xCenter < 3*self._width+self._width/2):
@@ -98,7 +116,7 @@ class bestSubimage(object):
         self._lastTime2 = self._current_milli_time()
         if(self._lastTime2 - self._lastTime > 500):
             self._lastTime = self._lastTime2
-            self._broadcastTF.sendTransform((x,y,1.045), quaternion_from_euler(0,0,theta*math.pi/180), rospy.Time(self._currentTime_secs, self._currentTime_nsecs), "RGBD_virtual","base_link")
+            self._broadcastTF.sendTransform((x,y,1.045), quaternion_from_euler(math.pi/2,0,theta*math.pi/180), rospy.Time(self._currentTime_secs, self._currentTime_nsecs), "RGBD_virtual","base_link")
         
         
     def _rotation(self, pxInicio, pxFin, vel):
