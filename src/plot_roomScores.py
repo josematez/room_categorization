@@ -21,8 +21,6 @@ class room_scores(object):
         self._newHab = False
         self._newData = False
 
-        # Variables auxiliares de control
-
         # Scores de habitaciones
         self._kitchen = []
         self._bathroom = []
@@ -40,9 +38,6 @@ class room_scores(object):
 
     def run(self):
         rate = rospy.Rate(10000)
-        #plt.ion()
-        #plt.show()
-        #plt.figure()
         while not rospy.is_shutdown(): 
             if self._newData == True:
                 print("Ploteando...")

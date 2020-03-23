@@ -15,6 +15,9 @@ from rosgraph_msgs.msg import Clock
 class bestSubimage(object):
 
     def __init__(self):
+
+        self._debug = False
+        
         self._bridge = CvBridge()
 
         # Publishers
@@ -46,6 +49,8 @@ class bestSubimage(object):
         self._last_panoramicD = None
         self._last_subimg = None
         self._last_subimgD = None
+
+        # Variables de interes
         self._last_xCenter = self._nCameras*self._width/2
         self._last_xCenterDestino = None
         self._last_category = 0
@@ -72,11 +77,18 @@ class bestSubimage(object):
 
     def _get_virtualTF(self):
         if(self._last_xCenter > self._width/2 and self._last_xCenter < 3*self._width+self._width/2):
-            theta = 135 / 720 * (self._last_xCenter - 120) - 90
+            #theta = 135*(self._last_xCenter - 120)/720 - 90
+            theta = -135*(self._last_xCenter - 840)/720 - 90
         elif(self._last_xCenter <= self._width/2):
-            theta = -90
-        else:
+            #theta = -90
             theta = 45
+        else:
+            #theta = 45
+            theta = -90
+        if self._debug == True:
+            print(self._last_xCenter <= self._width/2)
+            print("[get_bestSubimage]: xCenter TF theta: " + str(self._last_xCenter))
+            print("[get_bestSubimage]: virtual TF theta: " + str(theta))
         x = -5.062*pow(10,-6)*theta*theta + 1.111*pow(10,-6)*theta + 0.2812
         y = 2.03*pow(10,-6)*theta*theta + 0.00067*theta - 0.00255
         self._broadcastTF.sendTransform((x,y,1.045), quaternion_from_euler(0,0,theta*math.pi/180), rospy.Time(self._currentTime_secs, self._currentTime_nsecs), "RGBD_virtual","base_link")
@@ -106,7 +118,6 @@ class bestSubimage(object):
             T = 1000*abs(pxFin - pxInicio)/vel
             a = current_milli_time()
             b = current_milli_time()
-            #print("Explorando..." + str(self._last_xCenter) + " " + str(pxFin))
             while (b - a < T and self._noObject):
                 b = current_milli_time()
                 xCenter = (pxFin - pxInicio)*(b-a)/T + pxInicio
@@ -117,24 +128,21 @@ class bestSubimage(object):
                 img2pubRGB.header.frame_id = 'RGBD_virtual'
                 img2pubD.header.frame_id = 'RGBD_virtual'
                 self._pubRGB.publish(img2pubRGB)
-                self._pubD.publish(img2pubD)
-                #cv2.imshow('Imagen', self._last_subimg)
-                #cv2.waitKey(1)
-                
+                self._pubD.publish(img2pubD)      
     
     def _exploration(self):
         if (self._last_xCenter <= self._nCameras*self._width/2):
             self._rotation2(self._last_xCenter, self._width/2, self._vPanPx)
-            self._rotation2(self._last_xCenter, (self._nCameras-1)*self._width + self._width/2, self._vPanPx)
+            if self._noObject:
+                self._rotation2(self._last_xCenter, (self._nCameras-1)*self._width + self._width/2, self._vPanPx)
         else:
             self._rotation2(self._last_xCenter, (self._nCameras-1)*self._width + self._width/2, self._vPanPx)
-            self._rotation2(self._last_xCenter, self._width/2, self._vPanPx)
+            if self._noObject:
+                self._rotation2(self._last_xCenter, self._width/2, self._vPanPx)
 
     def _newPanoramicRGB_callback(self,data):
         self._last_panoramic = self._bridge.imgmsg_to_cv2(data, 'rgb8')
         self._startedRGB = True
-        #cv2.imshow('Imagen', self._last_panoramic)
-        #cv2.waitKey(1)
 
     def _newPanoramicD_callback(self,data):
         self._last_panoramicD = self._bridge.imgmsg_to_cv2(data, 'passthrough')
@@ -159,22 +167,20 @@ class bestSubimage(object):
         while not rospy.is_shutdown():
             if self._startedRGB and self._startedD:
                 if(self._last_category != 0):
-                    #print("[ROOM CATEGORIZATION] Visualizando objeto importante!")
+                    if self._debug == True:
+                        print("[get_bestSubimage] Visualizando objeto importante!")
                     self._rotation(self._last_xCenter, self._last_xCenterDestino, self._vPanPx)
                 else:
+                    if self._debug == True:
+                        print("[get_bestSubimage] Explorando!")
                     self._exploration()
-                    #print("[ROOM CATEGORIZATION] Explorando...")
                 img2pubRGB = self._bridge.cv2_to_imgmsg(self._last_subimg, 'rgb8')
                 img2pubD = self._bridge.cv2_to_imgmsg(self._last_subimgD, 'mono16')
                 self._get_virtualTF()
                 img2pubRGB.header.frame_id = 'RGBD_virtual'
                 img2pubD.header.frame_id = 'RGBD_virtual'
                 self._pubRGB.publish(img2pubRGB)         
-                self._pubD.publish(img2pubD)
-                #cv2.imshow('Imagen', self._last_subimg)
-                #cv2.waitKey(1)
-        #cv2.destroyAllWindows()
-            
+                self._pubD.publish(img2pubD)            
 
 def main():
     rospy.init_node('get_bestSubimage', anonymous=True)

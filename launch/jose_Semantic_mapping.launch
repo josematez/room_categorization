@@ -20,26 +20,19 @@
 	    <param name="debug" value="true"/>
     </node>-->
 
-
-<!--    ### R-CNN ### log-->
-<!--    <node name="mask_rcnn" pkg="mask_rcnn_ros" type="mask_rcnn_node" output="screen">-->
-<!--        <remap from="~input" to="semantic_mapping/RGB" />-->
-<!--        <param name="~visualization" value="true" />-->
-<!--    </node>-->
-
     ### ROOM_CATEGORIZATION ###
     <node name="generate_panoramicImage" pkg="room_categorization" type="generate_panoramicImage.py" output="screen"/>
     <node name="poseRobot" pkg="room_categorization" type="get_poseRobot.py" output="screen"/>
     <node name="objectsInFOV" pkg="room_categorization" type="objectsInFOV.py" output="screen"/>
     <node name="get_bestSubimage" pkg="room_categorization" type="get_bestSubimage.py" output="screen"/>
-    <node name="plot_roomScores" pkg="room_categorization" type="plot_roomScores.py" output="screen"/>
+ <!-- <node name="plot_roomScores" pkg="room_categorization" type="plot_roomScores.py" output="screen"/> -->   
 
 	
     ### RVIZ ###
     <node name="rviz_player1" pkg="rviz" type="rviz" args="-d $(find room_categorization)/rviz/room_categorization_rviz_config.rviz"/>
 
     ### RVIZ ###
-    <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find semantic_mapping)/launch/Semantic_mapping_config_rviz.rviz"/>
+<!--   <node name="rviz_player" pkg="rviz" type="rviz" args="-d $(find semantic_mapping)/launch/Semantic_mapping_config_rviz.rviz"/> -->   
 
 
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
+import rospy
 import math
 import matplotlib.pyplot as plt
 import geometry_msgs.msg
 from room_categorization.msg import bestObjectInfo
-import rospy
 from semantic_mapping.msg import SemanticObjects
 
 class objectsInFOV(object):
@@ -14,7 +14,6 @@ class objectsInFOV(object):
         self._pub = rospy.Publisher('bestObjectInfo', bestObjectInfo, queue_size=10)
         
         # Subscribers
-        rospy.Subscriber('semantic_mapping/object_in_room', SemanticObjects, self._newObjectList_callback)
         # /objects_in_room - Recibe lista con msg 'SemanticObjects':
             # - string: id
             # - string: id_room
@@ -22,6 +21,7 @@ class objectsInFOV(object):
             # - float64: score
             # - geometry_msgs/PoseStamped pose
             # - geometry_msgs/Vector3 scale
+        rospy.Subscriber('semantic_mapping/object_in_room', SemanticObjects, self._newObjectList_callback)
         # /poseRobot - Recibo la pose del robot:
         rospy.Subscriber("poseRobot", geometry_msgs.msg.Vector3, self._newRobotPose_callback)
             
@@ -37,7 +37,7 @@ class objectsInFOV(object):
         self._distZcamera = 1.045   # Distancia entre el suelo y la camara
         
         #Informacion del robot
-        self._poseRobot = [1,2,3,-70] # Pose del robot (x,y,z,orientacion(grados))
+        self._poseRobot = [1,2,3,80] # Pose del robot (x,y,z,orientacion(grados))
         self._angmax = None           # Angulo maximo del FOV horizontal del robot
         self._angmin = None           # Angulo minimo del FOV horizontal del robot
         self._angminc = None          # Correccion del FOV horizontal
@@ -53,21 +53,22 @@ class objectsInFOV(object):
         self._rad2deg = 180/math.pi  # Paso de radianes a grados
        
         # Informacion del entorno
-        self._mapa = {'DiningTable1': ('Kitchen1','Dining table', 3, 0.7892324, 0.4, 2.0,0.0),  #Se almacenan los objetos reconocidos
-            'DiningTable2': ('Kitchen1','Dining table', 3, 0.9828723, 5.5, 9.0,0.0),
-            'DiningTable3': ('Kitchen2','Dining table', 3, 0.7609432, -3.4, -2.0,0.0),
-            'DiningTable4': ('Kitchen2','Dining table', 3, 0.8892324, -0.4, -2.0,0.0),
-            'Chair1': ('Kitchen1','Chair', 1, 0.6792324, 5.4, 2.0,0.0),                
-            'Chair2': ('Kitchen1','Chair', 1, 0.9792324, 7.4, 2.0,0.0),
-            'Microwave1': ('Kitchen1','Microwave', 4, 0.7534982, 5.4, 6.5,0.0),
-            'Bed1': ('Bedroom1','Bed', 4, 0.8792324, -2.0, 2.0,0.0)}
+        #self._mapa = {'DiningTable1': ('Kitchen1','Dining table', 3, 0.7892324, 0.4, 2.0,0.0),  #Se almacenan los objetos reconocidos
+        #   'DiningTable2': ('Kitchen1','Dining table', 3, 0.9828723, 5.5, 9.0,0.0),
+        #   'DiningTable3': ('Kitchen2','Dining table', 3, 0.7609432, -3.4, -2.0,0.0),
+        #   'DiningTable4': ('Kitchen2','Dining table', 3, 0.8892324, -0.4, -2.0,0.0),
+        #   'Chair1': ('Kitchen1','Chair', 1, 0.6792324, 5.4, 2.0,0.0),                
+        #   'Chair2': ('Kitchen1','Chair', 1, 0.9792324, 7.4, 2.0,0.0),
+        #   'Microwave1': ('Kitchen1','Microwave', 4, 0.7534982, 5.4, 6.5,0.0),
+        #   'Bed1': ('Bedroom1','Bed', 4, 0.8792324, -2.0, 2.0,0.0)}
+        self._mapa = {}
         self.objIn = {}                    # Objetos dentro del FOV del robot
     
     def _getFOV(self):
         # Obtengo el FOV
-        # El +-22.5 es debido a que el FOV no esta centrado
+        # El +22.5 es debido a que el FOV no esta centrado
         self._angmax = (self._poseRobot[3] + self._FOVcamera / 2 + 22.5)*self._deg2rad  # Angulo maximo del FOV
-        self._angmin = (self._poseRobot[3] - self._FOVcamera / 2 - 22.5)*self._deg2rad  # Angulo minimo del FOV
+        self._angmin = (self._poseRobot[3] - self._FOVcamera / 2 + 22.5)*self._deg2rad  # Angulo minimo del FOV
         # Proceso el FOV para que siempre se cumpla que angmax >= angmin. Para ello, lo que se hace es
         # girar todos los angulos para que angmin valga 0 grados, de tal forma que se cumple siempre la condicion
         # propuesta.
@@ -88,22 +89,25 @@ class objectsInFOV(object):
                 self.objIn[obj] = self._mapa[obj] + (angle,)
         self._newObjectFOVList = True
 
+    # Funcion para debug. No utilizar en modo online ya que tarda mucho en pintar, por lo que las variables cambian y deja de tener sentido el plot
     def _plotScenario(self):
         # Calculo FOV para plotear
         xplotmax = [5*math.cos(self._angmax_plot) + self._poseRobot[0], self._poseRobot[0]]
         yplotmax = [5*math.sin(self._angmax_plot) + self._poseRobot[1], self._poseRobot[1]]
         xplotmin = [5*math.cos(self._angmin_plot) + self._poseRobot[0], self._poseRobot[0]]
         yplotmin = [5*math.sin(self._angmin_plot) + self._poseRobot[1], self._poseRobot[1]]
-        plt.figure()
+        plt.figure(1)
+        plt.clf()
         plt.scatter(self._poseRobot[0],self._poseRobot[1])
         plt.plot(xplotmax,yplotmax,xplotmin,yplotmin)
         for obj in self._mapa:
-            isIn = self._checker_objectinFOV(obj)
+            [isIn, angle] = self._checker_objectinFOV(obj)
             if isIn:
                 plt.scatter(self._mapa[obj][4],self._mapa[obj][5],c=(0,1,0))
             else:
                 plt.scatter(self._mapa[obj][4],self._mapa[obj][5],c=(1,0,0))
-        plt.show()
+        plt.show(block = False)
+        plt.pause(0.0001)
         
     def _checker_objectinFOV(self, objeto):
         # Comprobacion de si un objeto esta dentro del campo de vision del robot o no.
@@ -136,55 +140,48 @@ class objectsInFOV(object):
                         catBestObject = self.objIn[obj][2]
                         scoreBestObject = self.objIn[obj][3]
                         angleBestObject = self.objIn[obj][7]
+                        bestObj = obj
                     elif(self.objIn[obj][2] == catBestObject and self.objIn[obj][3] > scoreBestObject):
                         catBestObject = self.objIn[obj][2]
                         scoreBestObject = self.objIn[obj][3]
                         angleBestObject = self.objIn[obj][7]
+                        bestObj = obj
                 self._newObjectFOVList = False
                 px = int(round(self._nCameras*self._width - (((angleBestObject - self._angmin)*self._nCameras*self._width) / (self._angmax - self._angmin))))
                 msg = bestObjectInfo(catBestObject, px)
                 self._pub.publish(msg)
-                #print("[BEST OBJECT]: categoria: %d, score: %d, angulo: %d" %(catBestObject, scoreBestObject, angleBestObject*self._rad2deg))
-                #print(msg)
+                # print("Objeto:  " + str(bestObj) + "  Angulo:  " + str(angleBestObject))
             elif(not(bool(self.objIn)) and (catBestObject != 0 or angleBestObject != 0 or scoreBestObject!= 0)):
                 catBestObject = 0
                 angleBestObject = 0
                 scoreBestObject = 0
                 msg = bestObjectInfo(catBestObject, angleBestObject)
                 self._pub.publish(msg)
-                #print("[BEST OBJECT]: categoria: %d, score: %d, angulo: %d" %(catBestObject, scoreBestObject, angleBestObject*self._rad2deg))
-                #print(msg)
-
     
     def _newRobotPose_callback(self, data):
-        self._poseRobot = [data.x,data.y,0.0,data.z*self._rad2deg]
+        self._poseRobot = [data.x,data.y,0.0,self.angle_range0to2pi(data.z)*self._rad2deg]
         self._getFOV()
         self._createList_objectsInFOV()
-        #print("[POSE ROBOT] Nueva pose recibida: x: %.2f, y: %.2f, theta: %.2f" %(self._poseRobot[0], self._poseRobot[1], self._poseRobot[3]))
-        #print("Objetos en FOV: " + str(self.objIn))
     
     def _newObjectList_callback(self, data):
         self._mapa.clear()
         for obj in data.semanticObjects:
             self._mapa[obj.id] = (obj.idRoom, obj.type)
+            # Objetos que dan gran informacion sobre la habitacion. Categoria 4
             if(obj.type == 'http://mapir.isa.uma.es/Microwave' or obj.type == 'http://mapir.isa.uma.es/Oven' or obj.type == 'http://mapir.isa.uma.es/Toaster' or obj.type == 'http://mapir.isa.uma.es/Bed' or obj.type == 'http://mapir.isa.uma.es/Toilet'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (4,)
+            # Objetos que dan algo de informacion sobre la habitacion. Categoria 3
             elif(obj.type == 'http://mapir.isa.uma.es/Dining_Table' or obj.type == 'http://mapir.isa.uma.es/Sink'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (3,)
+            # Objetos que dan poca informacion sobre la habitacion. Categoria 2
             elif(obj.type == 'http://mapir.isa.uma.es/Tv' or obj.type == 'http://mapir.isa.uma.es/Bench' or obj.type == 'http://mapir.isa.uma.es/Couch'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (2,)
+            # Objetos que dan muy poca informacion sobre la habitacion. Categoria 1
             elif(obj.type == 'http://mapir.isa.uma.es/Chair'):
                 self._mapa[obj.id] = self._mapa[obj.id] + (1,)
             self._mapa[obj.id] = self._mapa[obj.id] + (obj.score, obj.pose.position.x, obj.pose.position.y, obj.pose.position.z,)
-        print(self._mapa)
         self._getFOV()
         self._createList_objectsInFOV()
-        print(self.objIn)
-        # Comprobar cada objeto de la lista nueva si:
-            # - Esta en la hab del robot, si no lo esta, descartado.
-            # - Si esta, comprobar si esta dentro del campo de vision.
-
-            # RESUMEN: Crear un diccionario que sea: ['id_objeto']: ('id_room','type_obj', category, score, posex, posey)
 
     @staticmethod
     def angle_range0to2pi(angle):

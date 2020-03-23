@@ -27,8 +27,8 @@ if __name__ == '__main__':
         if(last_trans != trans):
             quaternion = (trans.transform.rotation.x, trans.transform.rotation.y, trans.transform.rotation.z, trans.transform.rotation.w)
             rpy = euler_from_quaternion(quaternion)
+            # Envia (x,y, theta), ya que z es fijo, y theta es la orientacion
             msg = geometry_msgs.msg.Vector3(trans.transform.translation.x, trans.transform.translation.y, rpy[2])
             pub.publish(msg)
-            #print(msg)
 
         rate.sleep()
