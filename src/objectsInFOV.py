@@ -31,7 +31,7 @@ class objectsInFOV(object):
         self._nCameras = 4 # Numero de camaras
         self._height = 240 # Alto de la imagen de una camara
         self._width = 240  # Ancho de la imagen de una camara
-        self._vPan = 50    # Velocidad de rotacion horizontal en grados/seg.
+        self._vPan = 0    # Velocidad de rotacion horizontal en grados/seg.
         self._FOVcamera = 180 # Campo de vision horizontal
         self._FOVcameraVertical = 58 # Campo de vision vertical
         self._distZcamera = 1.045   # Distancia entre el suelo y la camara
@@ -43,7 +43,7 @@ class objectsInFOV(object):
         self._angminc = None          # Correccion del FOV horizontal
         self._angmax_plot = None      # Angulo maximo del FOV sin procesar del robot
         self._angmin_plot = None      # Angulo minimo del FOV sin procesar del robot
-        #self._currentHab = 'Kitchen1' # Habitacion actual del robot
+        self._currentRoom = 'NoValid' # Habitacion actual del robot
         
         # Variables de control 
         self._newObjectFOVList = False
@@ -83,11 +83,18 @@ class objectsInFOV(object):
     def _createList_objectsInFOV(self):
         self.objIn.clear()
         for obj in self._mapa:
-            #if (self._mapa[obj][0] == self._currentHab): # Compruebo si el objeto esta en la misma hab que el robot
-            [isIn, angle] = self._checker_objectinFOV(obj)
-            if(isIn == True):
-                self.objIn[obj] = self._mapa[obj] + (angle,)
+            if (self._mapa[obj][0] == self._currentRoom): # Compruebo si el objeto esta en la misma hab que el robot
+                [isIn, angle] = self._checker_objectinFOV(obj)
+                if(isIn == True):
+                    self.objIn[obj] = self._mapa[obj] + (angle,)
         self._newObjectFOVList = True
+
+        #print("[OBJETOS MAPA]: " + str(self._mapa))
+        #print("[POSE ROBOT] x: {}, y: {}, theta: {}" .format(self._poseRobot[0], self._poseRobot[1], self._poseRobot[3]))
+        #print("[OBJETOS FOV]: ################")
+        #for obj in self.objIn:
+        #    print("{} (Cat: {}) en x: {}, y: {}, z: {}" .format(self.objIn[obj][1], self.objIn[obj][2], self.objIn[obj][4], self.objIn[obj][5], self.objIn[obj][6]))
+        #print("#######################")
 
     # Funcion para debug. No utilizar en modo online ya que tarda mucho en pintar, por lo que las variables cambian y deja de tener sentido el plot
     def _plotScenario(self):
@@ -113,6 +120,7 @@ class objectsInFOV(object):
         # Comprobacion de si un objeto esta dentro del campo de vision del robot o no.
         angle = math.atan2((self._mapa[objeto][5]-self._poseRobot[1]),(self._mapa[objeto][4]-self._poseRobot[0]))
         angle = self.angle_range0to2pi(angle + self._angminc)
+        #if(self._currentRoom == self._mapa[objeto][0]):
         if (angle >= self._angmin and angle <= self._angmax):
             #self.objIn[objeto] = (self._mapa[objeto][0], self._mapa[objeto][1], angle)
             # Objeto dentro del campo de vision horizontal... pero, esta dentro del campo de vision vertical?
@@ -140,17 +148,14 @@ class objectsInFOV(object):
                         catBestObject = self.objIn[obj][2]
                         scoreBestObject = self.objIn[obj][3]
                         angleBestObject = self.objIn[obj][7]
-                        bestObj = obj
                     elif(self.objIn[obj][2] == catBestObject and self.objIn[obj][3] > scoreBestObject):
                         catBestObject = self.objIn[obj][2]
                         scoreBestObject = self.objIn[obj][3]
                         angleBestObject = self.objIn[obj][7]
-                        bestObj = obj
                 self._newObjectFOVList = False
                 px = int(round(self._nCameras*self._width - (((angleBestObject - self._angmin)*self._nCameras*self._width) / (self._angmax - self._angmin))))
                 msg = bestObjectInfo(catBestObject, px)
                 self._pub.publish(msg)
-                print("[objectsInFOV] Objeto:  " + str(bestObj) + "  Cat:  " + str(catBestObject))
             elif(not(bool(self.objIn)) and (catBestObject != 0 or angleBestObject != 0 or scoreBestObject!= 0)):
                 catBestObject = 0
                 angleBestObject = 0
@@ -181,7 +186,10 @@ class objectsInFOV(object):
                 self._mapa[obj.id] = self._mapa[obj.id] + (1,)
             else:
                 self._mapa[obj.id] = self._mapa[obj.id] + (0,)
-            self._mapa[obj.id] = self._mapa[obj.id] + (obj.score, obj.pose.position.x, obj.pose.position.y, obj.pose.position.z,)
+            self._mapa[obj.id] = self._mapa[obj.id] + (obj.score, obj.pose.position.x, obj.pose.position.z, obj.pose.position.y,)
+            if(self._currentRoom != obj.idRoom):
+                self._currentRoom = obj.idRoom
+                print("[HABITACION ACTUAL]: {}" .format(self._currentRoom))
         self._getFOV()
         self._createList_objectsInFOV()
 

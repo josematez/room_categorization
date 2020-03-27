@@ -16,7 +16,7 @@ class bestSubimage(object):
 
     def __init__(self):
 
-        self._debug = False
+        self._debug = True
         
         self._bridge = CvBridge()
 
@@ -40,7 +40,7 @@ class bestSubimage(object):
         self._nCameras = 4      # Numero de camaras
         self._height = 240      # Alto de la imagen de una camara
         self._width = 240       # Ancho de la imagen de una camara
-        self._vPan = 35        # Velocidad de rotacion horizontal en grados/seg.
+        self._vPan = 25         # Velocidad de rotacion horizontal en grados/seg.
         self._FOVcamera = 180   # alpha en grados
         self._vPanPx = self._vPan*self._nCameras*self._width/self._FOVcamera    # Velocidad de rotacion horizontal en px/seg.
 
@@ -107,16 +107,12 @@ class bestSubimage(object):
         else:
             #theta = 45
             theta = -90
-        if self._debug == True:
-            print(self._last_xCenter <= self._width/2)
-            print("[get_bestSubimage]: xCenter TF theta: " + str(self._last_xCenter))
-            print("[get_bestSubimage]: virtual TF theta: " + str(theta))
         x = -5.062*pow(10,-6)*theta*theta + 1.111*pow(10,-6)*theta + 0.2812
         y = 2.03*pow(10,-6)*theta*theta + 0.00067*theta - 0.00255
         self._lastTime2 = self._current_milli_time()
         if(self._lastTime2 - self._lastTime > 500):
             self._lastTime = self._lastTime2
-            self._broadcastTF.sendTransform((x,y,1.045), quaternion_from_euler(math.pi/2,0,theta*math.pi/180), rospy.Time(self._currentTime_secs, self._currentTime_nsecs), "RGBD_virtual","base_link")
+            self._broadcastTF.sendTransform((x,y,1.045), quaternion_from_euler(math.pi/2,0,(theta-90)*math.pi/180), rospy.Time(self._currentTime_secs, self._currentTime_nsecs), "RGBD_virtual","base_link")
         
         
     def _rotation(self, pxInicio, pxFin, vel):
