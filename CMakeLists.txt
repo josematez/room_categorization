@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -53,6 +54,7 @@ find_package(catkin REQUIRED COMPONENTS
    roomScores.msg
    semanticRoom.msg
    bestObjectInfo.msg
+   debugInfo.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -73,6 +75,7 @@ find_package(catkin REQUIRED COMPONENTS
  generate_messages(
    DEPENDENCIES
    std_msgs
+   geometry_msgs
  )
 
 ################################################

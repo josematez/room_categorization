@@ -16,7 +16,7 @@ class bestSubimage(object):
 
     def __init__(self):
 
-        self._debug = True
+        self._debug = False
         
         self._bridge = CvBridge()
 
@@ -40,7 +40,7 @@ class bestSubimage(object):
         self._nCameras = 4      # Numero de camaras
         self._height = 240      # Alto de la imagen de una camara
         self._width = 240       # Ancho de la imagen de una camara
-        self._vPan = 25         # Velocidad de rotacion horizontal en grados/seg.
+        self._vPan = 15         # Velocidad de rotacion horizontal en grados/seg.
         self._FOVcamera = 180   # alpha en grados
         self._vPanPx = self._vPan*self._nCameras*self._width/self._FOVcamera    # Velocidad de rotacion horizontal en px/seg.
 
@@ -61,6 +61,7 @@ class bestSubimage(object):
         self._startedD = False
         self._currentTime_secs = 0
         self._currentTime_nsecs = 0
+        self._publishRate = 1
 
         # Variables para debug
         self._current_milli_time = lambda: int(round(time.time()*1000))
@@ -88,8 +89,10 @@ class bestSubimage(object):
             if(test_shape[1] > 239):
                 print("ERROR CASO 2 - D")
         else:
-            self._last_subimg = self._last_panoramic[:,3*self._width+1:]
-            self._last_subimgD = self._last_panoramicD[:,3*self._width+1:]
+            self._last_subimg = self._last_panoramic[:,-(self._width-1):]
+            self._last_subimgD = self._last_panoramicD[:,-(self._width-1):]
+            #self._last_subimg = self._last_panoramic[:,3*self._width+1:]
+            #self._last_subimgD = self._last_panoramicD[:,3*self._width+1:]
             test_shape = self._last_subimg.shape[:2]
             if(test_shape[1] > 239):
                 print("ERROR CASO 3 - RGB" + str(test_shape))
@@ -152,6 +155,7 @@ class bestSubimage(object):
                 self._pubD.publish(img2pubD)      
     
     def _exploration(self):
+        print("Explorando!")
         if (self._last_xCenter <= self._nCameras*self._width/2):
             self._rotation2(self._last_xCenter, self._width/2, self._vPanPx)
             if self._noObject:
@@ -185,6 +189,7 @@ class bestSubimage(object):
         self._currentTime_nsecs = data.clock.nsecs
 
     def run(self):
+        rate = rospy.Rate(self._publishRate)
         while not rospy.is_shutdown():
             if self._startedRGB and self._startedD:
                 if(self._last_category != 0):
@@ -201,7 +206,8 @@ class bestSubimage(object):
                 img2pubRGB.header.frame_id = 'RGBD_virtual'
                 img2pubD.header.frame_id = 'RGBD_virtual'
                 self._pubRGB.publish(img2pubRGB)         
-                self._pubD.publish(img2pubD)            
+                self._pubD.publish(img2pubD)
+            rate.sleep()
 
 def main():
     rospy.init_node('get_bestSubimage', anonymous=True)
