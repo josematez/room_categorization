@@ -4,6 +4,7 @@ import rospy
 import math
 import sys
 from room_categorization.msg import debugInfo
+from room_categorization.msg import bestObjectInfo
 from geometry_msgs.msg import Vector3
 
 class info(object):
@@ -13,6 +14,7 @@ class info(object):
         # Subscribers
         rospy.Subscriber("consoleDebugInfo", debugInfo, self._newInfo)
         rospy.Subscriber("poseRobot", Vector3, self._newRobotPose_callback)
+        rospy.Subscriber("bestObjectInfo", bestObjectInfo, self._newObject_callback)
         
         # Conversions
         self._rad2deg = 180/math.pi
@@ -25,13 +27,21 @@ class info(object):
         self._roomObject = None
         self._poseObject = Vector3(0, 0, 0)
         self._pxObject = None
+        self._objInFOV = None
+        self._firstExploration = False
 
         # Initialization
         print("Esto va a borrarse")
         print("Y esto tambien :(")
+        print(":(((")
+        print("N")
 
     def run(self):
         while not rospy.is_shutdown():
+            sys.stdout.write('\x1b[1A')
+            sys.stdout.write('\x1b[2K')
+            sys.stdout.write('\x1b[1A')
+            sys.stdout.write('\x1b[2K')
             sys.stdout.write('\x1b[1A')
             sys.stdout.write('\x1b[2K')
             sys.stdout.write('\x1b[1A')
@@ -44,6 +54,7 @@ class info(object):
                 self._roomObject, self._pxObject))
             else:
                 print("[ACTIVE PERCEPTION] Stopped.")
+            print("[OBJETOS EN EL FOV DEL ROBOT] {}" .format(self._objInFOV))
 
     
     def _newInfo(self, data):
@@ -53,9 +64,13 @@ class info(object):
         self._roomObject = data.objectRoom
         self._poseObject = data.poseObject
         self._pxObject = data.pxObject
+        self._objInFOV = data.objectsInFOV
     
     def _newRobotPose_callback(self, data):
         self._poseRobot = Vector3(data.x, data.y, self.angle_range0to2pi(data.z)*self._rad2deg)
+
+    def _newObject_callback(self, data):
+        pass
 
     @staticmethod
     def angle_range0to2pi(angle):

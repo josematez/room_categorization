@@ -7,6 +7,7 @@ import geometry_msgs.msg
 from room_categorization.msg import bestObjectInfo
 from semantic_mapping.msg import SemanticObjects
 from room_categorization.msg import debugInfo
+from semantic_mapping.msg import SemanticRoom
 import sys
 
 class objectsInFOV(object):
@@ -90,6 +91,9 @@ class objectsInFOV(object):
                 [isIn, angle] = self._checker_objectinFOV(obj)
                 if(isIn == True):
                     self.objIn[obj] = self._mapa[obj] + (angle,)
+        print("[MAPA]: {}" .format(self._mapa))
+        print("--------------------------")
+        print("[MAPA OBJIN]: {}" .format(self.objIn))
         self._newObjectFOVList = True
 
         #print("[OBJETOS MAPA]: " + str(self._mapa))
@@ -153,11 +157,13 @@ class objectsInFOV(object):
         scoreBestObject = None
         bestObj = None
         exploration = True
+        listaObjIn = []
         #last_bestObj = None
         while not rospy.is_shutdown():
             if(bool(self.objIn) and self._newObjectFOVList):
                 exploration = False
                 catBestObject = 0
+                listaObjIn = []
                 for obj in self.objIn:
                     if(self.objIn[obj][2] > catBestObject):
                         catBestObject = self.objIn[obj][2]
@@ -171,10 +177,11 @@ class objectsInFOV(object):
                         angleBestObject = self.objIn[obj][7]
                         bestObj = self.objIn[obj][1]
                         idBestObj = obj
+                    listaObjIn.append(self.objIn[obj][1])
                 px = int(round(self._nCameras*self._width - (((angleBestObject - self._angmin)*self._nCameras*self._width) / (self._angmax - self._angmin))))
                 msg = bestObjectInfo(catBestObject, px)
                 self._pub.publish(msg)
-                debug_msg = debugInfo(self._currentRoom, exploration, bestObj, self._mapa[idBestObj][0], geometry_msgs.msg.Vector3(self._mapa[idBestObj][4], self._mapa[idBestObj][5], self._mapa[idBestObj][6]), px)
+                debug_msg = debugInfo(self._currentRoom, exploration, bestObj, self._mapa[idBestObj][0], geometry_msgs.msg.Vector3(self._mapa[idBestObj][4], self._mapa[idBestObj][5], self._mapa[idBestObj][6]), px, listaObjIn)
                 self._pubDebug.publish(debug_msg)
                 # self._debugInfo(bestObj, angleBestObject, self._mapa[idBestObj][4], self._mapa[idBestObj][5], self._mapa[idBestObj][6])
                 self._newObjectFOVList = False
@@ -186,7 +193,7 @@ class objectsInFOV(object):
                 scoreBestObject = 0
                 msg = bestObjectInfo(catBestObject, angleBestObject)
                 self._pub.publish(msg)
-                debug_msg = debugInfo(self._currentRoom, exploration, 'None', 'None', geometry_msgs.msg.Vector3(), 0)
+                debug_msg = debugInfo(self._currentRoom, exploration, 'None', 'None', geometry_msgs.msg.Vector3(), 0, [])
                 self._pubDebug.publish(debug_msg)
     
     def _newRobotPose_callback(self, data):
@@ -213,8 +220,8 @@ class objectsInFOV(object):
             else:
                 self._mapa[obj.id] = self._mapa[obj.id] + (0,)
             self._mapa[obj.id] = self._mapa[obj.id] + (obj.score, obj.pose.position.x, obj.pose.position.z, obj.pose.position.y,)
-            if(self._currentRoom != obj.idRoom):
-                self._currentRoom = obj.idRoom
+            #if(self._currentRoom != obj.idRoom):
+            #    self._currentRoom = obj.idRoom
         self._getFOV()
         self._createList_objectsInFOV()
 
